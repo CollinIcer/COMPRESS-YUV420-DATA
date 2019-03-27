@@ -153,7 +153,7 @@ def get_bits(val):
         print("======================Error in get_bits===================")
 
 
-def compress(pred,src,is_h):
+def compress(pred,src,is_h,is_v,is_dc):
      # src[0]  src[1]  src[2]  src[3]
      # src[4]  src[5]  src[6]  src[7]
      # src[8]  src[9]  src[10] src[11]
@@ -179,7 +179,7 @@ def compress(pred,src,is_h):
         rs32 = src[14] - pred[3]
         rs33 = src[15] - pred[3]
 
-    else:
+    elif(is_v):
         rs00 = src[0] - pred[0]
         rs01 = src[4] - pred[0]
         rs02 = src[8] - pred[0]
@@ -199,6 +199,46 @@ def compress(pred,src,is_h):
         rs31 = src[7] - pred[3]
         rs32 = src[11] - pred[3]
         rs33 = src[15] - pred[3]
+    elif(is_dc):
+        rs00 = src[0] - pred[0]
+        rs01 = src[1] - pred[0]
+        rs02 = src[4] - pred[0]
+        rs03 = src[5] - pred[0]
+
+        rs10 = src[2] - pred[1]
+        rs11 = src[3] - pred[1]
+        rs12 = src[6] - pred[1]
+        rs13 = src[7] - pred[1]
+
+        rs20 = src[8] - pred[2]
+        rs21 = src[9] - pred[2]
+        rs22 = src[12] - pred[2]
+        rs23 = src[13] - pred[2]
+
+        rs30 = src[10] - pred[3]
+        rs31 = src[11] - pred[3]
+        rs32 = src[14] - pred[3]
+        rs33 = src[15] - pred[3]
+    else:
+        rs00 = src[0] - pred[0]
+        rs01 = src[5] - pred[0]
+        rs02 = src[10] - pred[0]
+        rs03 = src[15] - pred[0]
+
+        rs10 = src[3] - pred[1]
+        rs11 = src[6] - pred[1]
+        rs12 = src[9] - pred[1]
+        rs13 = src[12] - pred[1]
+
+        rs20 = src[4] - pred[2]
+        rs21 = src[1] - pred[2]
+        rs22 = src[2] - pred[2]
+        rs23 = src[7] - pred[2]
+
+        rs30 = src[8] - pred[3]
+        rs31 = src[13] - pred[3]
+        rs32 = src[14] - pred[3]
+        rs33 = src[11] - pred[3]
 
     #print(rs00,rs01,rs02,rs03)
     #print(rs10,rs11,rs12,rs13)
@@ -208,42 +248,44 @@ def compress(pred,src,is_h):
 
 
 
-    if([rs00,rs01,rs02,rs03,rs10,rs11,rs12,rs13,rs20,rs21,rs22,rs23,rs30,rs31,rs32,rs33] == ([0]*16)):
-        HV_copy_sbnum+=1
-        print("copy ")
-        return 0
-    else:
-        min0 = min(rs00,rs01,rs02,rs03)
-        min1 = min(rs10,rs11,rs12,rs13)
-        min2 = min(rs20,rs21,rs22,rs23)
-        min3 = min(rs30,rs31,rs32,rs33)
+    #if([rs00,rs01,rs02,rs03,rs10,rs11,rs12,rs13,rs20,rs21,rs22,rs23,rs30,rs31,rs32,rs33] == ([0]*16)):
+    #   HV_copy_sbnum+=1
+    #   print("copy ")
+    #    return 0
+    #else:
+    min0 = min(rs00,rs01,rs02,rs03)
+    min1 = min(rs10,rs11,rs12,rs13)
+    min2 = min(rs20,rs21,rs22,rs23)
+    min3 = min(rs30,rs31,rs32,rs33)
 
-        min_tr = min(min0,min1,min2,min3)
+    min_tr = min(min0,min1,min2,min3)
 
-        min_rs0 = min0 - min_tr
-        min_rs1 = min1 - min_tr
-        min_rs2 = min2 - min_tr
-        min_rs3 = min3 - min_tr
+    min_rs0 = min0 - min_tr
+    min_rs1 = min1 - min_tr
+    min_rs2 = min2 - min_tr
+    min_rs3 = min3 - min_tr
  
-        min_rs_max = max(min_rs0,min_rs2,min_rs2,min_rs3)      
+    min_rs_max = max(min_rs0,min_rs2,min_rs2,min_rs3)
         
-        rs0_sub_max = max(rs00-min0,rs01-min0,rs02-min0,rs03-min0)
-        rs1_sub_max = max(rs10-min1,rs11-min1,rs12-min1,rs13-min1)
-        rs2_sub_max = max(rs20-min2,rs21-min2,rs22-min2,rs23-min2)
-        rs3_sub_max = max(rs30-min3,rs31-min3,rs32-min3,rs33-min3)
+    rs0_sub_max = max(rs00-min0,rs01-min0,rs02-min0,rs03-min0)
+    rs1_sub_max = max(rs10-min1,rs11-min1,rs12-min1,rs13-min1)
+    rs2_sub_max = max(rs20-min2,rs21-min2,rs22-min2,rs23-min2)
+    rs3_sub_max = max(rs30-min3,rs31-min3,rs32-min3,rs33-min3)
+
+
          
 
-        k0 = get_bits(min_rs_max) 
-        k1 = get_bits(rs0_sub_max) 
-        k2 = get_bits(rs1_sub_max) 
-        k3 = get_bits(rs2_sub_max) 
-        k4 = get_bits(rs3_sub_max) 
+    k0 = get_bits(min_rs_max)
+    k1 = get_bits(rs0_sub_max)
+    k2 = get_bits(rs1_sub_max)
+    k3 = get_bits(rs2_sub_max)
+    k4 = get_bits(rs3_sub_max)
 
-        bits = 29 + 4*(k0+k1+k2+k3)
-        if(bits<128):
-            return bits
-        else:
-            return 128
+    bits = 28 + 4*(k0+k1+k2+k3+k4)
+    if(bits<128):
+        return bits
+    else:
+        return 128
 
 	
 def compress_sb4x4(src, sb_idx, w, h, is_y):
@@ -267,25 +309,30 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
 
     #print("hen" + str(h_en))
     #print("ven" + str(v_en))
+    DC = [0, 0, 0, 0]
+    #if(h_en==1):
+        #left = [src[sb_idx-1][3],src[sb_idx-1][7],src[sb_idx-1][11],src[sb_idx-1][15]]
+    h_bits = compress(DC,src[sb_idx],1,0,0)
 
-    if(h_en==1):
-        left = [src[sb_idx-1][3],src[sb_idx-1][7],src[sb_idx-1][11],src[sb_idx-1][15]]
-        h_bits = compress(left,src[sb_idx],1)
+    #if(v_en==1):
+        #top = [src[sb_idx-1][12],src[sb_idx-1][13],src[sb_idx-1][14],src[sb_idx-1][15]]
+    v_bits = compress(DC,src[sb_idx],0,1,0)
 
-    if(v_en==1):
-        top = [src[sb_idx-1][12],src[sb_idx-1][13],src[sb_idx-1][14],src[sb_idx-1][15]]
-        v_bits = compress(top,src[sb_idx],0)
+    #if(h_en==0 and v_en==0):
+        #DC = [128,128,128,128]
 
-    if(h_en==0 and v_en==0):
-        DC = [128,128,128,128] 
-        dc_bits = compress(DC,src[sb_idx],0)
+    dc_bits = compress(DC,src[sb_idx],0,0,1)
+    oth_bits = compress(DC, src[sb_idx], 0, 0, 0)
 
-    if(h_en==0 and v_en==0): 
-        min_bits = dc_bits
-    elif(h_en==1 and v_en==0):
-        min_bits = h_bits
-    else:
-        min_bits = v_bits
+
+    #if(h_en==0 and v_en==0):
+    #    min_bits = dc_bits
+    #elif(h_en==1 and v_en==0):
+    #    min_bits = h_bits
+    #elif(h_en==0 and v_en==1):
+    #    min_bits = v_bits
+    #else:
+    min_bits = min(dc_bits,h_bits,v_bits,oth_bits)
 
     return min_bits 
 
