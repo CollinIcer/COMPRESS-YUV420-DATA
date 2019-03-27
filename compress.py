@@ -10,7 +10,7 @@ width = 160
 height = 160 
 
 sby_num = width*height//16
-sbuv_num = sby_num//2
+sbuv_num = sby_num//4
 
 
 Ypixel=[ [0]*16 for row in range(0,sby_num )] 
@@ -21,6 +21,9 @@ sbh = (int)(height/4)
 sbw = (int)(width/4)
 uv_sbh = (int)(height/8)
 uv_sbw = (int)(width/8)
+
+HV_copy_sbnum = 0
+
 
 
 def yuv_import(filename,dims,numfrm,startfrm):
@@ -197,13 +200,17 @@ def compress(pred,src,is_h):
         rs32 = src[11] - pred[3]
         rs33 = src[15] - pred[3]
 
-    print(rs00,rs01,rs02,rs03)
-    print(rs10,rs11,rs12,rs13)
-    print(rs20,rs21,rs22,rs23)
-    print(rs30,rs31,rs32,rs33)
+    #print(rs00,rs01,rs02,rs03)
+    #print(rs10,rs11,rs12,rs13)
+    #print(rs20,rs21,rs22,rs23)
+    #print(rs30,rs31,rs32,rs33)
+    global HV_copy_sbnum
+
 
 
     if([rs00,rs01,rs02,rs03,rs10,rs11,rs12,rs13,rs20,rs21,rs22,rs23,rs30,rs31,rs32,rs33] == ([0]*16)):
+        HV_copy_sbnum+=1
+        print("copy ")
         return 0
     else:
         min0 = min(rs00,rs01,rs02,rs03)
@@ -258,8 +265,8 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
         else:
             h_en = 1 
 
-    print("hen" + str(h_en))
-    print("ven" + str(v_en))
+    #print("hen" + str(h_en))
+    #print("ven" + str(v_en))
 
     if(h_en==1):
         left = [src[sb_idx-1][3],src[sb_idx-1][7],src[sb_idx-1][11],src[sb_idx-1][15]]
@@ -311,8 +318,9 @@ for i in range(0,sbuv_num):
 print(total_bits)
 ratio = total_bits/(width*height*8*1.5)
 print("ratio:" + (str)(ratio))
-
-
+print("copy num"+str(HV_copy_sbnum))
+copy_ratio = HV_copy_sbnum/(sby_num+sbuv_num+sbuv_num)
+print("HV copy ratio:" +(str)(copy_ratio) )
 
 
 
