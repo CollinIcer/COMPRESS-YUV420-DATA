@@ -152,6 +152,22 @@ def get_bits(val):
         print("======================Error in get_bits===================")
         print("======================Error in get_bits===================")
 
+def zero_cnt(src):
+    cnt = 0
+    print("src")
+    print(src)
+    if(src==[0,0,0,0]):
+        cnt = 4
+    elif((src[0] + src[1] + src[2] + src[3]) ==1):
+        cnt = 3 
+    elif((src[0:2]==[0,0]) or (src[1:3] == [0,0]) or (src[2:4] == [0,0])):
+        cnt = 2
+        print(src)
+        print("has zero2----------------------------------------------------------------------------")
+    else:
+        cnt = 1
+    return cnt
+
 
 def compress(pred,src,is_h,is_v,is_dc):
      # src[0]  src[1]  src[2]  src[3]
@@ -281,7 +297,23 @@ def compress(pred,src,is_h,is_v,is_dc):
     k3 = get_bits(rs2_sub_max)
     k4 = get_bits(rs3_sub_max)
 
-    bits = 28 + 4*(k0+k1+k2+k3+k4)
+    #zero_cnt0 = (int)(min_rs0==0) + (int)(min_rs1==0) + (int)(min_rs2==0) + (int)(min_rs3==0)
+    #zero_cnt1 = (int)(rs00==min0) + (int)(rs01==min0) + (int)(rs02==min0) + (int)(rs03==min0)
+    #zero_cnt2 = (int)(rs10==min1) + (int)(rs11==min1) + (int)(rs12==min1) + (int)(rs13==min1)
+    #zero_cnt3 = (int)(rs20==min2) + (int)(rs21==min2) + (int)(rs22==min2) + (int)(rs23==min2)
+    #zero_cnt4 = (int)(rs30==min3) + (int)(rs31==min3) + (int)(rs32==min3) + (int)(rs33==min3)
+
+    zero_cnt0 = zero_cnt([min_rs0,min_rs1,min_rs2,min_rs3])
+    zero_cnt1 = zero_cnt([rs00-min0,rs01-min0,rs02-min0,rs03-min0])
+    zero_cnt2 = zero_cnt([rs10-min1,rs11-min1,rs12-min1,rs13-min1])
+    zero_cnt3 = zero_cnt([rs20-min2,rs21-min2,rs22-min2,rs23-min2])
+    zero_cnt4 = zero_cnt([rs30-min3,rs31-min3,rs32-min3,rs33-min3])
+
+
+    print("zero " + (str)(zero_cnt0)  + " "  + (str)(zero_cnt1) + " " + (str)(zero_cnt2) + " " + (str)(zero_cnt3) + " " + (str)(zero_cnt4))
+    
+    #bits = 28 + 4*(k0+k1+k2+k3+k4)
+    bits = 28 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
     if(bits<128):
         return bits
     else:
@@ -322,7 +354,7 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
         #DC = [128,128,128,128]
 
     dc_bits = compress(DC,src[sb_idx],0,0,1)
-    oth_bits = compress(DC, src[sb_idx], 0, 0, 0)
+    #oth_bits = compress(DC, src[sb_idx], 0, 0, 0)
 
 
     #if(h_en==0 and v_en==0):
@@ -332,7 +364,8 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     #elif(h_en==0 and v_en==1):
     #    min_bits = v_bits
     #else:
-    min_bits = min(dc_bits,h_bits,v_bits,oth_bits)
+    #min_bits = min(dc_bits,h_bits,v_bits,oth_bits)
+    min_bits = min(dc_bits,h_bits,v_bits)
 
     return min_bits 
 
