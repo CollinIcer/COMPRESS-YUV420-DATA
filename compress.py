@@ -57,14 +57,13 @@ def yuv_import(filename,dims,numfrm,startfrm):
     for i in range(numfrm):
         for m in range(dims[0]):
             for n in range(dims[1]):
-                #print m,n
-                Yt[m,n]=ord(fp.read(1))
+                Yt[m, n] = int.from_bytes(fp.read(1), byteorder='little', signed=False)
         for m in range(d00):
             for n in range(d01):
-                Ut[m,n]=ord(fp.read(1))
+                Ut[m, n] = int.from_bytes(fp.read(1), byteorder='little', signed=False)
         for m in range(d00):
             for n in range(d01):
-                Vt[m,n]=ord(fp.read(1))
+                Vt[m, n] = int.from_bytes(fp.read(1), byteorder='little', signed=False)
         Y=Y+[Yt]
         U=U+[Ut]
         V=V+[Vt]
@@ -83,16 +82,7 @@ def yuv_import(filename,dims,numfrm,startfrm):
             newy1 = (idy*4+1) 
             newy2 = (idy*4+2) 
             newy3 = (idy*4+3) 
-            #print("newy3:" + str(newy3))
-            #print("newx:" + str(newx))
-            #ltmp = [] 
-              
-            #ltmp =  [Yt[newx,newy0], Yt[newx+1,newy0], Yt[newx+2,newy0], Yt[newx+3,newy0], 
-            #         Yt[newx,newy1], Yt[newx+1,newy1], Yt[newx+2,newy1], Yt[newx+3,newy1],   
-            #         Yt[newx,newy2], Yt[newx+1,newy2], Yt[newx+2,newy2], Yt[newx+3,newy2],  
-            #         Yt[newx,newy3], Yt[newx+1,newy3], Yt[newx+2,newy3], Yt[newx+3,newy3]]
-
-
+           
             Ypixel[idx+idy*sbw] = [Yt[newx,newy0], Yt[newx+1,newy0], Yt[newx+2,newy0], Yt[newx+3,newy0], 
                      Yt[newx,newy1], Yt[newx+1,newy1], Yt[newx+2,newy1], Yt[newx+3,newy1],   
                      Yt[newx,newy2], Yt[newx+1,newy2], Yt[newx+2,newy2], Yt[newx+3,newy2],  
@@ -159,7 +149,7 @@ def get_bits(val):
         return 1 
     else:
         print("======================Error in get_bits===================")
-        print("======================Error in get_bits===================")
+
 
 def zero_cnt(src):
     cnt = 0
@@ -441,7 +431,7 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
 
 
 
-data=yuv_import(yuv_file,(width,height),1,1) #read yuv
+data=yuv_import(yuv_file,(width,height),1,0) #read yuv
 YY=data[0][0]
 im=PIL.Image.frombytes('L',(width,height),YY)
 #im.show(YY)
