@@ -5,13 +5,18 @@ import PIL.Image
 screenLevels = 255.0
 #4x4 pixel
 
-yuv_file = "test1280x720.yuv"
-width = 1280 
-height = 720 
+#yuv_file = "test1280x720.yuv"
+#width = 1280 
+#height = 720 
 
 #yuv_file = "test352x288.yuv"
 #width = 352 
 #height = 288 
+
+yuv_file = "test160x160.yuv"
+width = 160 
+height = 160 
+
 
 sby_num = width*height//16
 sbuv_num = sby_num//4
@@ -173,6 +178,7 @@ def zero_cnt(src):
     return cnt
 
 
+
 def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
      # src[0]  src[1]  src[2]  src[3]
      # src[4]  src[5]  src[6]  src[7]
@@ -265,24 +271,24 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
         rs32 = src[14]  # - pred[3]
         rs33 = src[15]  # - pred[3]
 
-    if( rs00 ==  pred[0]   and 
-        rs01 ==  pred[0]   and   
-        rs02 ==  pred[0]   and  
-        rs03 ==  pred[0]   and  
-        rs10 ==  pred[1]   and  
-        rs11 ==  pred[1]   and  
-        rs12 ==  pred[1]   and  
-        rs13 ==  pred[1]   and  
-        rs20 ==  pred[2]   and  
-        rs21 ==  pred[2]   and 
-        rs22 ==  pred[2]   and 
-        rs23 ==  pred[2]   and 
-        rs30 ==  pred[3]   and 
-        rs31 ==  pred[3]   and 
-        rs32 ==  pred[3]   and 
-        rs33 ==  pred[3]   and ( (has_left and is_h) or (has_top and is_v) ) ): 
-        print("v H copy mode")
-        return 2 
+    #if( rs00 ==  pred[0]   and 
+    #    rs01 ==  pred[0]   and   
+    #    rs02 ==  pred[0]   and  
+    #    rs03 ==  pred[0]   and  
+    #    rs10 ==  pred[1]   and  
+    #    rs11 ==  pred[1]   and  
+    #    rs12 ==  pred[1]   and  
+    #    rs13 ==  pred[1]   and  
+    #    rs20 ==  pred[2]   and  
+    #    rs21 ==  pred[2]   and 
+    #    rs22 ==  pred[2]   and 
+    #    rs23 ==  pred[2]   and 
+    #    rs30 ==  pred[3]   and 
+    #    rs31 ==  pred[3]   and 
+    #    rs32 ==  pred[3]   and 
+    #    rs33 ==  pred[3]   and ( (has_left and is_h) or (has_top and is_v) ) ): 
+    #    print("v H copy mode")
+    #    return 2 
 
 
 
@@ -350,7 +356,18 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
         print(pred)
     else:
         #bits = 28 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
-        bits = 30 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
+        #bits = 30 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
+        k0_bits = 0 if(zero_cnt0==4) else (3*k0 + 2)
+        k1_bits = 0 if(zero_cnt1==4) else (3*k1 + 2)
+
+               
+
+        k2_bits = 0 if((zero_cnt2==4) or ([rs10,rs11,rs12,rs13] == [rs00,rs01,rs02,rs03])) else (3*k2 + 2)
+        k3_bits = 0 if((zero_cnt3==4) or ([rs20,rs21,rs22,rs23] == [rs00,rs01,rs02,rs03] or [rs20,rs21,rs22,rs23] == [rs10,rs11,rs12,rs13] )) else (3*k3 + 2)
+        k4_bits = 0 if((zero_cnt4==4) or ([rs30,rs31,rs32,rs33] == [rs00,rs01,rs02,rs03] or [rs30,rs31,rs32,rs33] == [rs10,rs11,rs12,rs13]  or [rs30,rs31,rs32,rs33] == [rs20,rs21,rs22,rs23] )) else (3*k4 + 2)
+
+        #bits = 30 + (4-zero_cnt0)*k0 + (4t1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
+        bits = 30 + k0_bits + k1_bits + k2_bits + k3_bits + k4_bits 
 
     if(bits<128):
         return bits
@@ -414,6 +431,7 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     #else:
     #min_bits = min(dc_bits,h_bits,v_bits,oth_bits)
     min_bits = min(dc_bits,h_bits,v_bits)
+    #min_bits = dc_bits
     #min_bits = min(dc_bits,h_bits,v_bits)
     #min_bits = dc_bits
     if((min_bits%8) !=0 ):
