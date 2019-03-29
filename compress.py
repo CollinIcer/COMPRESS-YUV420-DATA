@@ -5,17 +5,19 @@ import PIL.Image
 screenLevels = 255.0
 #4x4 pixel
 
-#yuv_file = "test1280x720.yuv"
-#width = 1280 
-#height = 720 
 
-#yuv_file = "test352x288.yuv"
-#width = 352 
-#height = 288 
+TR_COPY_MODE = 1
+yuv_file = "test1280x720.yuv"
+width = 1280
+height = 720
 
-yuv_file = "test160x160.yuv"
-width = 160 
-height = 160 
+#yuv_file = "test640x480.yuv"
+#width = 640
+#height = 480
+
+#yuv_file = "test160x160.yuv"
+#width = 160
+#height = 160
 
 
 sby_num = width*height//16
@@ -31,7 +33,7 @@ sbw = (int)(width/4)
 uv_sbh = (int)(height/8)
 uv_sbw = (int)(width/8)
 
-HV_copy_sbnum = 0
+#HV_copy_sbnum = 0
 
 
 
@@ -42,31 +44,25 @@ def yuv_import(filename,dims,numfrm,startfrm):
     seek_len = (int)(blk_size*startfrm)
     #print(seek_len)
     fp.seek(seek_len,0)
-    Y=[]
-    U=[]
-    V=[]
-    #print dims[0]
-    #print dims[1]
-    d00=dims[0]//2
-    d01=dims[1]//2
-    #print(d00)
-    #print(d01)
-    Yt=zeros((dims[0],dims[1]),uint8,'C')
-    Ut=zeros((d00,d01),uint8,'C')
-    Vt=zeros((d00,d01),uint8,'C')
+    y_w =dims[0]  
+    y_h =dims[1]
+    uv_w=dims[0]//2
+    uv_h=dims[1]//2
+    Yt=zeros((y_h,y_w),uint8,'C')
+    Ut=zeros((uv_h,uv_w),uint8,'C')
+    Vt=zeros((uv_h,uv_w),uint8,'C')
     for i in range(numfrm):
-        for m in range(dims[0]):
-            for n in range(dims[1]):
+        for m in range(y_h):  # y dirc
+            for n in range(y_w):# x dirc
                 Yt[m, n] = int.from_bytes(fp.read(1), byteorder='little', signed=False)
-        for m in range(d00):
-            for n in range(d01):
+               #print( Yt[m, n] )
+        for m in range(uv_h):
+            for n in range(uv_w):
                 Ut[m, n] = int.from_bytes(fp.read(1), byteorder='little', signed=False)
-        for m in range(d00):
-            for n in range(d01):
+        for m in range(uv_h):
+            for n in range(uv_w):
                 Vt[m, n] = int.from_bytes(fp.read(1), byteorder='little', signed=False)
-        Y=Y+[Yt]
-        U=U+[Ut]
-        V=V+[Vt]
+
 
     width = dims[0]
     height = dims[1]
@@ -83,10 +79,10 @@ def yuv_import(filename,dims,numfrm,startfrm):
             newy2 = (idy*4+2) 
             newy3 = (idy*4+3) 
            
-            Ypixel[idx+idy*sbw] = [Yt[newx,newy0], Yt[newx+1,newy0], Yt[newx+2,newy0], Yt[newx+3,newy0], 
-                     Yt[newx,newy1], Yt[newx+1,newy1], Yt[newx+2,newy1], Yt[newx+3,newy1],   
-                     Yt[newx,newy2], Yt[newx+1,newy2], Yt[newx+2,newy2], Yt[newx+3,newy2],  
-                     Yt[newx,newy3], Yt[newx+1,newy3], Yt[newx+2,newy3], Yt[newx+3,newy3]]
+            Ypixel[idx+idy*sbw] = [Yt[newy0,newx], Yt[newy0,newx+1], Yt[newy0,newx+2], Yt[newy0,newx+3], 
+                                   Yt[newy1,newx], Yt[newy1,newx+1], Yt[newy1,newx+2], Yt[newy1,newx+3],   
+                                   Yt[newy2,newx], Yt[newy2,newx+1], Yt[newy2,newx+2], Yt[newy2,newx+3],  
+                                   Yt[newy3,newx], Yt[newy3,newx+1], Yt[newy3,newx+2], Yt[newy3,newx+3]]
 
             #print("sbidx"+str(idx+idy*sbw))
             #print(Ypixel[idx+idy*sbw])
@@ -99,10 +95,12 @@ def yuv_import(filename,dims,numfrm,startfrm):
             newy1 = (idy*4+1) 
             newy2 = (idy*4+2) 
             newy3 = (idy*4+3) 
-            Upixel[idx+idy*uv_sbw] =  [Ut[newx,newy0], Ut[newx+1,newy0], Ut[newx+2,newy0], Ut[newx+3,newy0],  
-                                       Ut[newx,newy1], Ut[newx+1,newy1], Ut[newx+2,newy1], Ut[newx+3,newy1],  
-                                       Ut[newx,newy2], Ut[newx+1,newy2], Ut[newx+2,newy2], Ut[newx+3,newy2],  
-                                       Ut[newx,newy3], Ut[newx+1,newy3], Ut[newx+2,newy3], Ut[newx+3,newy3]]
+            Upixel[idx+idy*uv_sbw] = [Ut[newy0,newx], Ut[newy0,newx+1], Ut[newy0,newx+2], Ut[newy0,newx+3],
+                                      Ut[newy1,newx], Ut[newy1,newx+1], Ut[newy1,newx+2], Ut[newy1,newx+3],
+                                      Ut[newy2,newx], Ut[newy2,newx+1], Ut[newy2,newx+2], Ut[newy2,newx+3],
+                                      Ut[newy3,newx], Ut[newy3,newx+1], Ut[newy3,newx+2], Ut[newy3,newx+3]]
+
+
 
             #print("usbidx"+str(idx+idy*uv_sbw))
             #print(Upixel[idx+idy*uv_sbw])
@@ -114,11 +112,13 @@ def yuv_import(filename,dims,numfrm,startfrm):
             newy1 = (idy*4+1) 
             newy2 = (idy*4+2) 
             newy3 = (idy*4+3) 
-            Vpixel[idx+idy*uv_sbw] =  [Vt[newx,newy0], Vt[newx+1,newy0], Vt[newx+2,newy0], Vt[newx+3,newy0],  
-                                       Vt[newx,newy1], Vt[newx+1,newy1], Vt[newx+2,newy1], Vt[newx+3,newy1],   
-                                       Vt[newx,newy2], Vt[newx+1,newy2], Vt[newx+2,newy2], Vt[newx+3,newy2],  
-                                       Vt[newx,newy3], Vt[newx+1,newy3], Vt[newx+2,newy3], Vt[newx+3,newy3]]
    	
+            Vpixel[idx+idy*uv_sbw] = [Vt[newy0,newx], Vt[newy0,newx+1], Vt[newy0,newx+2], Vt[newy0,newx+3],
+                                      Vt[newy1,newx], Vt[newy1,newx+1], Vt[newy1,newx+2], Vt[newy1,newx+3],
+                                      Vt[newy2,newx], Vt[newy2,newx+1], Vt[newy2,newx+2], Vt[newy2,newx+3],
+                                      Vt[newy3,newx], Vt[newy3,newx+1], Vt[newy3,newx+2], Vt[newy3,newx+3]]
+
+
 
             #print("vsbidx"+str(idx+idy*uv_sbw))
             #print(Vpixel[idx+idy*uv_sbw])
@@ -126,7 +126,7 @@ def yuv_import(filename,dims,numfrm,startfrm):
 
 		
     fp.close()
-    return (Y,U,V)
+    return (Yt,Ut,Vt)
 	
 def get_bits(val):
     if(val>=256 and val < 512):
@@ -175,164 +175,161 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
      # src[8]  src[9]  src[10] src[11]
      # src[12] src[13] src[14] src[15]
     if(is_h):
-        rs00 = src[0]   #- pred[0]
-        rs01 = src[1]   #- pred[0]
-        rs02 = src[2]   #- pred[0]
-        rs03 = src[3]   #- pred[0]
+        src00 = src[0]   
+        src01 = src[1]   
+        src02 = src[2]   
+        src03 = src[3]   
         
-        rs10 = src[4]   #- pred[1]
-        rs11 = src[5]   #- pred[1]
-        rs12 = src[6]   #- pred[1]
-        rs13 = src[7]   #- pred[1]
+        src10 = src[4]   
+        src11 = src[5]   
+        src12 = src[6]   
+        src13 = src[7]   
 
-        rs20 = src[8 ]  # - pred[2]
-        rs21 = src[9 ]  # - pred[2]
-        rs22 = src[10]  # - pred[2]
-        rs23 = src[11]  # - pred[2]
+        src20 = src[8 ]  
+        src21 = src[9 ]  
+        src22 = src[10]  
+        src23 = src[11]  
 
-        rs30 = src[12]  # - pred[3]
-        rs31 = src[13]  # - pred[3]
-        rs32 = src[14]  # - pred[3]
-        rs33 = src[15]  # - pred[3]
-
-
+        src30 = src[12]  
+        src31 = src[13]  
+        src32 = src[14]  
+        src33 = src[15]  
 
 
     elif(is_v):
-        rs00 = src[0]   #- pred[0]
-        rs01 = src[4]   #- pred[0]
-        rs02 = src[8]   #- pred[0]
-        rs03 = src[12]  # - pred[0]
+        src00 = src[0]   
+        src01 = src[4]   
+        src02 = src[8]   
+        src03 = src[12]  
         
-        rs10 = src[1]   #- pred[1]
-        rs11 = src[5]   #- pred[1]
-        rs12 = src[9]   #- pred[1]
-        rs13 = src[13]  # - pred[1]
+        src10 = src[1]   
+        src11 = src[5]   
+        src12 = src[9]   
+        src13 = src[13]  
 
-        rs20 = src[2 ]  # - pred[2]
-        rs21 = src[6 ]  # - pred[2]
-        rs22 = src[10]  # - pred[2]
-        rs23 = src[14]  # - pred[2]
+        src20 = src[2 ]  
+        src21 = src[6 ]  
+        src22 = src[10]  
+        src23 = src[14]  
 
-        rs30 = src[3]   #- pred[3]
-        rs31 = src[7]   #- pred[3]
-        rs32 = src[11]  # - pred[3]
-        rs33 = src[15]  # - pred[3]
+        src30 = src[3]   
+        src31 = src[7]   
+        src32 = src[11]  
+        src33 = src[15]  
 
     elif(is_dc):
-        rs00 = src[0]   #- pred[0]
-        rs01 = src[1]   #- pred[0]
-        rs02 = src[4]   #- pred[0]
-        rs03 = src[5]   #- pred[0]
+        src00 = src[0]   
+        src01 = src[1]   
+        src02 = src[4]   
+        src03 = src[5]   
 
-        rs10 = src[2]   #- pred[1]
-        rs11 = src[3]   #- pred[1]
-        rs12 = src[6]   #- pred[1]
-        rs13 = src[7]   #- pred[1]
+        src10 = src[2]   
+        src11 = src[3]   
+        src12 = src[6]   
+        src13 = src[7]   
 
-        rs20 = src[8]   #- pred[2]
-        rs21 = src[9]   #- pred[2]
-        rs22 = src[12]  # - pred[2]
-        rs23 = src[13]  # - pred[2]
+        src20 = src[8]   
+        src21 = src[9]   
+        src22 = src[12]  
+        src23 = src[13]  
 
-        rs30 = src[10]  # - pred[3]
-        rs31 = src[11]  # - pred[3]
-        rs32 = src[14]  # - pred[3]
-        rs33 = src[15]  # - pred[3]
+        src30 = src[10]  
+        src31 = src[11]  
+        src32 = src[14]  
+        src33 = src[15]  
 
     else:
-        rs00 = src[0]   #- pred[0]
-        rs01 = src[1]   #- pred[0]
-        rs02 = src[2]  # - pred[0]
-        rs03 = src[3]  # - pred[0]
+        src00 = src[0]  
+        src01 = src[1]  
+        src02 = src[2]  
+        src03 = src[3]  
 
-        rs10 = src[4]   #- pred[1]
-        rs11 = src[5]   #- pred[1]
-        rs12 = src[8]   #- pred[1]
-        rs13 = src[9]  # - pred[1]
+        src10 = src[4]  
+        src11 = src[5]  
+        src12 = src[8]  
+        src13 = src[9]  
 
-        rs20 = src[6]   #- pred[2]
-        rs21 = src[7]   #- pred[2]
-        rs22 = src[10]   #- pred[2]
-        rs23 = src[11]   #- pred[2]
+        src20 = src[6]  
+        src21 = src[7]  
+        src22 = src[10] 
+        src23 = src[11] 
 
-        rs30 = src[12]   #- pred[3]
-        rs31 = src[13]  # - pred[3]
-        rs32 = src[14]  # - pred[3]
-        rs33 = src[15]  # - pred[3]
+        src30 = src[12] 
+        src31 = src[13] 
+        src32 = src[14] 
+        src33 = src[15] 
 
-    #if( rs00 ==  pred[0]   and 
-    #    rs01 ==  pred[0]   and   
-    #    rs02 ==  pred[0]   and  
-    #    rs03 ==  pred[0]   and  
-    #    rs10 ==  pred[1]   and  
-    #    rs11 ==  pred[1]   and  
-    #    rs12 ==  pred[1]   and  
-    #    rs13 ==  pred[1]   and  
-    #    rs20 ==  pred[2]   and  
-    #    rs21 ==  pred[2]   and 
-    #    rs22 ==  pred[2]   and 
-    #    rs23 ==  pred[2]   and 
-    #    rs30 ==  pred[3]   and 
-    #    rs31 ==  pred[3]   and 
-    #    rs32 ==  pred[3]   and 
-    #    rs33 ==  pred[3]   and ( (has_left and is_h) or (has_top and is_v) ) ): 
+    #if( src00 ==  pred[0]   and 
+    #    src01 ==  pred[0]   and   
+    #    src02 ==  pred[0]   and  
+    #    src03 ==  pred[0]   and  
+    #    src10 ==  pred[1]   and  
+    #    src11 ==  pred[1]   and  
+    #    src12 ==  pred[1]   and  
+    #    src13 ==  pred[1]   and  
+    #    src20 ==  pred[2]   and  
+    #    src21 ==  pred[2]   and 
+    #    src22 ==  pred[2]   and 
+    #    src23 ==  pred[2]   and 
+    #    src30 ==  pred[3]   and 
+    #    src31 ==  pred[3]   and 
+    #    src32 ==  pred[3]   and 
+    #    src33 ==  pred[3]   and ( (has_left and is_h) or (has_top and is_v) ) ): 
     #    print("v H copy mode")
     #    return 2 
 
 
+    #print("is_h,isv :"+str(is_h) + " " + str(is_v))
+    #print(src00,src01,src02,src03)
+    #print(src10,src11,src12,src13)
+    #print(src20,src21,src22,src23)
+    #print(src30,src31,src32,src33)
+    #global HV_copy_sbnum
 
-    #print(rs00,rs01,rs02,rs03)
-    #print(rs10,rs11,rs12,rs13)
-    #print(rs20,rs21,rs22,rs23)
-    #print(rs30,rs31,rs32,rs33)
-    global HV_copy_sbnum
 
 
-
-    #if([rs00,rs01,rs02,rs03,rs10,rs11,rs12,rs13,rs20,rs21,rs22,rs23,rs30,rs31,rs32,rs33] == ([0]*16)):
+    #if([src00,src01,src02,src03,src10,src11,src12,src13,src20,src21,src22,src23,src30,src31,src32,src33] == ([0]*16)):
     #   HV_copy_sbnum+=1
     #   print("copy ")
     #    return 0
     #else:
-    min0 = min(rs00,rs01,rs02,rs03)
-    min1 = min(rs10,rs11,rs12,rs13)
-    min2 = min(rs20,rs21,rs22,rs23)
-    min3 = min(rs30,rs31,rs32,rs33)
+    min0 = min(src00,src01,src02,src03)
+    min1 = min(src10,src11,src12,src13)
+    min2 = min(src20,src21,src22,src23)
+    min3 = min(src30,src31,src32,src33)
 
     min_tr = min(min0,min1,min2,min3)
 
-    min_rs0 = min0 - min_tr
-    min_rs1 = min1 - min_tr
-    min_rs2 = min2 - min_tr
-    min_rs3 = min3 - min_tr
+    min_src0 = min0 - min_tr
+    min_src1 = min1 - min_tr
+    min_src2 = min2 - min_tr
+    min_src3 = min3 - min_tr
  
-    min_rs_max = max(min_rs0,min_rs2,min_rs2,min_rs3)
+    min_src_max = max(min_src0,min_src2,min_src2,min_src3)
         
-    rs0_sub_max = max(rs00-min0,rs01-min0,rs02-min0,rs03-min0)
-    rs1_sub_max = max(rs10-min1,rs11-min1,rs12-min1,rs13-min1)
-    rs2_sub_max = max(rs20-min2,rs21-min2,rs22-min2,rs23-min2)
-    rs3_sub_max = max(rs30-min3,rs31-min3,rs32-min3,rs33-min3)
+    src0_sub_max = max(src00-min0,src01-min0,src02-min0,src03-min0)
+    src1_sub_max = max(src10-min1,src11-min1,src12-min1,src13-min1)
+    src2_sub_max = max(src20-min2,src21-min2,src22-min2,src23-min2)
+    src3_sub_max = max(src30-min3,src31-min3,src32-min3,src33-min3)
 
 
+    k0 = get_bits(min_src_max)
+    k1 = get_bits(src0_sub_max)
+    k2 = get_bits(src1_sub_max)
+    k3 = get_bits(src2_sub_max)
+    k4 = get_bits(src3_sub_max)
 
-    k0 = get_bits(min_rs_max)
-    k1 = get_bits(rs0_sub_max)
-    k2 = get_bits(rs1_sub_max)
-    k3 = get_bits(rs2_sub_max)
-    k4 = get_bits(rs3_sub_max)
+    #zero_cnt0 = (int)(min_src0==0) + (int)(min_src1==0) + (int)(min_src2==0) + (int)(min_src3==0)
+    #zero_cnt1 = (int)(src00==min0) + (int)(src01==min0) + (int)(src02==min0) + (int)(src03==min0)
+    #zero_cnt2 = (int)(src10==min1) + (int)(src11==min1) + (int)(src12==min1) + (int)(src13==min1)
+    #zero_cnt3 = (int)(src20==min2) + (int)(src21==min2) + (int)(src22==min2) + (int)(src23==min2)
+    #zero_cnt4 = (int)(src30==min3) + (int)(src31==min3) + (int)(src32==min3) + (int)(src33==min3)
 
-    #zero_cnt0 = (int)(min_rs0==0) + (int)(min_rs1==0) + (int)(min_rs2==0) + (int)(min_rs3==0)
-    #zero_cnt1 = (int)(rs00==min0) + (int)(rs01==min0) + (int)(rs02==min0) + (int)(rs03==min0)
-    #zero_cnt2 = (int)(rs10==min1) + (int)(rs11==min1) + (int)(rs12==min1) + (int)(rs13==min1)
-    #zero_cnt3 = (int)(rs20==min2) + (int)(rs21==min2) + (int)(rs22==min2) + (int)(rs23==min2)
-    #zero_cnt4 = (int)(rs30==min3) + (int)(rs31==min3) + (int)(rs32==min3) + (int)(rs33==min3)
-
-    zero_cnt0 = zero_cnt([min_rs0,min_rs1,min_rs2,min_rs3])
-    zero_cnt1 = zero_cnt([rs00-min0,rs01-min0,rs02-min0,rs03-min0])
-    zero_cnt2 = zero_cnt([rs10-min1,rs11-min1,rs12-min1,rs13-min1])
-    zero_cnt3 = zero_cnt([rs20-min2,rs21-min2,rs22-min2,rs23-min2])
-    zero_cnt4 = zero_cnt([rs30-min3,rs31-min3,rs32-min3,rs33-min3])
+    zero_cnt0 = zero_cnt([min_src0,min_src1,min_src2,min_src3])
+    zero_cnt1 = zero_cnt([src00-min0,src01-min0,src02-min0,src03-min0])
+    zero_cnt2 = zero_cnt([src10-min1,src11-min1,src12-min1,src13-min1])
+    zero_cnt3 = zero_cnt([src20-min2,src21-min2,src22-min2,src23-min2])
+    zero_cnt4 = zero_cnt([src30-min3,src31-min3,src32-min3,src33-min3])
 
     #print("zero " + (str)(zero_cnt0)  + " "  + (str)(zero_cnt1) + " " + (str)(zero_cnt2) + " " + (str)(zero_cnt3) + " " + (str)(zero_cnt4))
     
@@ -343,22 +340,25 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
         bits = 8+4
         print("all pixel is the same in the 4x4 block")
         print(src)
-        print(pred)
+        #print(pred)
     else:
         #bits = 28 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
         #bits = 30 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
         k0_bits = 0 if(zero_cnt0==4) else (3*k0 + 2)
         k1_bits = 0 if(zero_cnt1==4) else (3*k1 + 2)
 
-               
-
-        k2_bits = 0 if((zero_cnt2==4) or ([rs10,rs11,rs12,rs13] == [rs00,rs01,rs02,rs03])) else (3*k2 + 2)
-        k3_bits = 0 if((zero_cnt3==4) or ([rs20,rs21,rs22,rs23] == [rs00,rs01,rs02,rs03] or [rs20,rs21,rs22,rs23] == [rs10,rs11,rs12,rs13] )) else (3*k3 + 2)
-        k4_bits = 0 if((zero_cnt4==4) or ([rs30,rs31,rs32,rs33] == [rs00,rs01,rs02,rs03] or [rs30,rs31,rs32,rs33] == [rs10,rs11,rs12,rs13]  or [rs30,rs31,rs32,rs33] == [rs20,rs21,rs22,rs23] )) else (3*k4 + 2)
+        if(TR_COPY_MODE):
+            k2_bits = 0 if((zero_cnt2==4) or ([src10,src11,src12,src13] == [src00,src01,src02,src03])) else (3*k2 + 2)
+            k3_bits = 0 if((zero_cnt3==4) or ([src20,src21,src22,src23] == [src00,src01,src02,src03] or [src20,src21,src22,src23] == [src10,src11,src12,src13] )) else (3*k3 + 2)
+            k4_bits = 0 if((zero_cnt4==4) or ([src30,src31,src32,src33] == [src00,src01,src02,src03] or [src30,src31,src32,src33] == [src10,src11,src12,src13]  or [src30,src31,src32,src33] == [src20,src21,src22,src23] )) else (3*k4 + 2)
+        else:
+            k2_bits = 0 if (zero_cnt2 == 4) else (3 * k2 + 2)
+            k3_bits = 0 if (zero_cnt3 == 4) else (3 * k3 + 2)
+            k4_bits = 0 if (zero_cnt4 == 4) else (3 * k4 + 2)
 
         #bits = 30 + (4-zero_cnt0)*k0 + (4t1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
         bits = 30 + k0_bits + k1_bits + k2_bits + k3_bits + k4_bits 
-
+        #print("k0,k1,k2,k3,k4 " + str(k0_bits) + " " + str(k1_bits) + " " + str(k2_bits) + " " + str(k3_bits) + " " + str(k4_bits))
     if(bits<128):
         return bits
     else:
@@ -389,6 +389,7 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     DC = [0, 0, 0, 0]
     left = [src[sb_idx-1][3],src[sb_idx-1][7],src[sb_idx-1][11],src[sb_idx-1][15]]
 
+    #print(src[sb_idx])
     has_left = h_en
     h_bits = compress(left,src[sb_idx],1,0,0, has_left,0)
     #h_bits = compress(left,[0]*16,1,0,0, has_left,0)
@@ -397,11 +398,6 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
         #top = [src[sb_idx-1][12],src[sb_idx-1][13],src[sb_idx-1][14],src[sb_idx-1][15]]
     has_top = v_en
     top = [src[sb_idx-1][12],src[sb_idx-1][13],src[sb_idx-1][14],src[sb_idx-1][15]]
-    if(has_top and top[0] == src[sb_idx][0] and top[1] == src[sb_idx][1] and top[2]==src[sb_idx][2] and top[3]==src[sb_idx][3]):
-        print("top: ")
-        print(top)
-        print("src: ")
-        print(src[sb_idx])
 
     v_bits = compress(top,src[sb_idx],0,1,0, 0,has_top)
 
@@ -432,35 +428,28 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
 
 
 data=yuv_import(yuv_file,(width,height),1,0) #read yuv
-YY=data[0][0]
-im=PIL.Image.frombytes('L',(width,height),YY)
+YY=data[0]
+im=PIL.Image.fromarray(YY,'L')
 #im.show(YY)
 im.save('a.jpg')
 
-
-
-
-
 total_bits = 0
+#total_bits += compress_sb4x4(Ypixel,0,sbw,sbh,1)
 for i in range(0,sby_num):
-    total_bits += compress_sb4x4(Ypixel,i,sbw,sbh,1)                              
-
+    total_bits += compress_sb4x4(Ypixel,i,sbw,sbh,1)
+#
 print("Y total_bits" + (str)(total_bits) )
-
+#
 for i in range(0,sbuv_num):
-    total_bits += compress_sb4x4(Upixel,i,sbw,sbh,0)                              
-
+    total_bits += compress_sb4x4(Upixel,i,sbw,sbh,0)
+#
 print(total_bits)
-
 for i in range(0,sbuv_num):
-    total_bits += compress_sb4x4(Vpixel,i,sbw,sbh,0)                              
-
+    total_bits += compress_sb4x4(Vpixel,i,sbw,sbh,0)
+#
 print(total_bits)
 ratio = total_bits/(width*height*8*1.5)
 print("ratio:" + (str)(ratio))
-print("copy num"+str(HV_copy_sbnum))
-copy_ratio = HV_copy_sbnum/(sby_num+sbuv_num+sbuv_num)
-print("HV copy ratio:" +(str)(copy_ratio) )
 
 
 
