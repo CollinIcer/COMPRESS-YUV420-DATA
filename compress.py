@@ -6,10 +6,14 @@ screenLevels = 255.0
 #4x4 pixel
 
 
-TR_COPY_MODE = 1
+TR_COPY_MODE = 1 
+SB_COPY_MODE = 1  
+SUBBLOCK_MODE  = 1 #3 sub block
 #yuv_file = "test1280x720.yuv"
-#width = 1280
-#height = 720
+yuv_file = "vid720.yuv"
+#yuv_file = "vid00_720.yuv"
+width = 1280
+height = 720
 
 #yuv_file = "test640x480.yuv"
 #width = 640
@@ -19,9 +23,9 @@ TR_COPY_MODE = 1
 #width = 160
 #height = 160
 
-yuv_file = "test1024x768.yuv"
-width = 1024 
-height = 768 
+#yuv_file = "test1024x768.yuv"
+#width = 1024 
+#height = 768 
 
 #yuv_file = "test320x240.yuv"
 #width = 320 
@@ -30,6 +34,7 @@ height = 768
 
 sby_num = width*height//16
 sbuv_num = sby_num//4
+
 
 
 Ypixel=[ [0]*16 for row in range(0,sby_num )] 
@@ -42,7 +47,7 @@ uv_sbh = (int)(height/8)
 uv_sbw = (int)(width/8)
 
 HV_copy_sbnum = 0
-
+uncompress_sbnum =0
 
 
 def yuv_import(filename,dims,numfrm,startfrm):
@@ -268,11 +273,13 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
         src33 = src[15] 
 
     global HV_copy_sbnum
+    global uncompress_sbnum
 
-    if( src == pred and ( (has_left and is_h) or (has_top and is_v) ) ): 
-        print("v H copy mode")
+    
+    if( SB_COPY_MODE and src == pred and ( (has_left and is_h) or (has_top and is_v) ) ): 
+        #print("v H copy mode")
         HV_copy_sbnum +=1
-        return 6 #B_K0 + 2bit(indicate block mode) 
+        return 4 #B_K0  
 
     #print("is_h,isv :"+str(is_h) + " " + str(is_v))
     #print(src00,src01,src02,src03)
@@ -332,7 +339,7 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
     #bits = 28 + 4*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
     if(zero_cnt0==4 and zero_cnt1==4 and zero_cnt2==4 and zero_cnt3==4 and zero_cnt4==4):
         bits = 8+4 #B_K0 + min_val
-        print("all pixel is the same in the 4x4 block")
+        #print("all pixel is the same in the 4x4 block")
         
     else:
         #bits = 28 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
@@ -355,7 +362,8 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
     if(bits<128):
         return bits
     else:
-        return 128
+        uncompress_sbnum +=1
+        return 128 + 6 
 
 	
 def compress_sb4x4(src, sb_idx, w, h, is_y):
@@ -390,21 +398,25 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     if(has_top):
         top = src[sb_idx-w]
 
-    print("\n src \n")
-    print(src[sb_idx])
-    if(has_left): 
-        print("\n left \n")
-        print(left)
-    if(has_top):
-        print("\n top \n")
-        print(top)
+    #print("\n src \n")
+    #print(src[sb_idx])
+    #if(has_left): 
+    #    print("\n left \n")
+    #    print(left)
+    #if(has_top):
+    #    print("\n top \n")
+    #    print(top)
 
 
     h_bits = compress(left,src[sb_idx],1,0,0, has_left,0)
     v_bits = compress(top,src[sb_idx],0,1,0, 0,has_top)
     dc_bits = compress(DC,src[sb_idx],0,0,1,0,0)
     #oth_bits = compress(DC, src[sb_idx], 0, 0, 0, 0, 0)
-    min_bits = min(dc_bits,h_bits,v_bits)
+
+    if(SUBBLOCK_MODE):
+        min_bits = min(dc_bits,h_bits,v_bits)
+    else:
+        min_bits = dc_bits-2
     #min_bits = dc_bits
     #min_bits = min(dc_bits,h_bits,v_bits)
     #if((min_bits%8) !=0 ):
@@ -413,28 +425,33 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     return min_bits 
 
 
-
-data=yuv_import(yuv_file,(width,height),1,0) #read yuv
-YY=data[0]
-im=PIL.Image.fromarray(YY,'L')
-#im.show(YY)
-im.save('a.jpg')
-
-total_bits = 0
-#total_bits += compress_sb4x4(Ypixel,0,sbw,sbh,1)
-for i in range(0,sby_num):
-    total_bits += compress_sb4x4(Ypixel,i,sbw,sbh,1)
-#
-print("Y total_bits" + (str)(total_bits) )
-#
-for i in range(0,sbuv_num):
-    total_bits += compress_sb4x4(Upixel,i,uv_sbw,uv_sbh,0)
-#
-print(total_bits)
-for i in range(0,sbuv_num):
-    total_bits += compress_sb4x4(Vpixel,i,uv_sbw,uv_sbh,0)
-#
-print(total_bits)
-ratio = total_bits/(width*height*8*1.5)
-print("ratio:" + (str)(ratio))
-print("HV COPY sblock num : " + str(HV_copy_sbnum))
+for frame in range(0,10): #10 frame num
+    data=yuv_import(yuv_file,(width,height),1,frame) #read yuv
+    YY=data[0]
+    im=PIL.Image.fromarray(YY,'L')
+    #im.show(YY)
+    save_file = "pic"+str(frame)+".jpg"
+    im.save(save_file)
+    
+    total_bits = 0
+    HV_copy_sbnum = 0
+    uncompress_sbnum = 0
+    #total_bits += compress_sb4x4(Ypixel,0,sbw,sbh,1)
+    for i in range(0,sby_num):
+        total_bits += compress_sb4x4(Ypixel,i,sbw,sbh,1)
+    #
+    print("Y total_bits" + (str)(total_bits) )
+    #
+    for i in range(0,sbuv_num):
+        total_bits += compress_sb4x4(Upixel,i,uv_sbw,uv_sbh,0)
+    #
+    #print(total_bits)
+    for i in range(0,sbuv_num):
+        total_bits += compress_sb4x4(Vpixel,i,uv_sbw,uv_sbh,0)
+    #
+    #print(total_bits)
+    ratio = total_bits/(width*height*8*1.5)
+    print("frame: " + str(frame))
+    print("ratio:" + (str)(ratio))
+    print("HV COPY sblock num : " + str(HV_copy_sbnum))
+    print("uncopress sblock num : " + str(uncompress_sbnum))
