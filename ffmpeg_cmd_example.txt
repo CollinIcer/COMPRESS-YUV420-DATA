@@ -1,0 +1,3 @@
+ffmpeg -i test.jpg -s 640x480 -pix_fmt yuv420p test.yuv
+
+ffmpeg -i test1.h264 -c:v rawvideo -pix_fmt yuv420p test1.yuv
