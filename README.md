@@ -16,38 +16,34 @@ Compress Element:
      sb_mode = 3: all 4x4 block is uncopress
      
  4bit K1:
-     K1=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock
+     K1=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock1
+     k1=9   :sublock1 is the same as its left subblock in the same sb_mode
+     k1=10  :sublock1 is the same as its top subblock in the same sb_mode
      
  4bit K2:
-     K2=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock
-     K2=9:  sublock2 is the same as sblock1
+     K2=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock2
+     K2=9:   sublock2 is the same as its left subblock in the same sb_mode
+     K2=10:  sublock2 is the same as its top subblock in the same sb_mode
      
  4bit K3:
-     K3=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock
-     K3=9:   sublock3 is the same as sblock1
-     K3=10:  sublock3 is the same as sblock2
+     K3=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock3
+     K3=9:   sublock3 is the same as its left/top block's subblock in the same sb_mode
+     K3=10:  sublock3 is the same as its sublock1
+     K3=11:  sublock3 is the same as its sublock2
      
  4bit K4:
-     K4=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock
-     K4=9:   sublock4 is the same as sblock1
-     K4=10:  sublock4 is the same as sblock2
-     K4=11:  sublock4 is the same as sblock3
+     K4=0~8 :the bits to represent the residual of min vals of sublock and the other pixel in the sublock4
+     K4=9:   sublock4 is the same as its left/top block's subblock in the same sb_mode
+     K4=10:  sublock4 is the same as sblock1
+     K4=11:  sublock4 is the same as sblock2
+     K4=12:  sublock4 is the same as sblock3
      
  Total BITS COUNT:
      uncopress: K0 + sb_mode + 128 = 6 + 128
      block has same pixel: 4bit
      block copy top or left: 4bit
-     others: as code,
+     others: see in compress.py
      
-        if(TR_COPY_MODE):
-            k2_bits = 0 if((zero_cnt2==4) or ([src10,src11,src12,src13] == [src00,src01,src02,src03])) else (3*k2 + 2)
-            k3_bits = 0 if((zero_cnt3==4) or ([src20,src21,src22,src23] == [src00,src01,src02,src03] or [src20,src21,src22,src23] == [src10,src11,src12,src13] )) else (3*k3 + 2)
-            k4_bits = 0 if((zero_cnt4==4) or ([src30,src31,src32,src33] == [src00,src01,src02,src03] or [src30,src31,src32,src33] == [src10,src11,src12,src13]  or [src30,src31,src32,src33] == [src20,src21,src22,src23] )) else (3*k4 + 2)
-        else:
-            k2_bits = 0 if (zero_cnt2 == 4) else (3 * k2 + 2)
-            k3_bits = 0 if (zero_cnt3 == 4) else (3 * k3 + 2)
-            k4_bits = 0 if (zero_cnt4 == 4) else (3 * k4 + 2)
-
-        bits = 30 + k0_bits + k1_bits + k2_bits + k3_bits + k4_bits 
+        
         
     
