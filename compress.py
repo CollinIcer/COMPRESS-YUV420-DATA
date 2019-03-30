@@ -7,9 +7,9 @@ screenLevels = 255.0
 
 
 TR_COPY_MODE = 1
-yuv_file = "test1280x720.yuv"
-width = 1280
-height = 720
+#yuv_file = "test1280x720.yuv"
+#width = 1280
+#height = 720
 
 #yuv_file = "test640x480.yuv"
 #width = 640
@@ -18,6 +18,14 @@ height = 720
 #yuv_file = "test160x160.yuv"
 #width = 160
 #height = 160
+
+yuv_file = "test1024x768.yuv"
+width = 1024 
+height = 768 
+
+#yuv_file = "test320x240.yuv"
+#width = 320 
+#height = 240 
 
 
 sby_num = width*height//16
@@ -33,7 +41,7 @@ sbw = (int)(width/4)
 uv_sbh = (int)(height/8)
 uv_sbw = (int)(width/8)
 
-#HV_copy_sbnum = 0
+HV_copy_sbnum = 0
 
 
 
@@ -259,32 +267,18 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
         src32 = src[14] 
         src33 = src[15] 
 
-    #if( src00 ==  pred[0]   and 
-    #    src01 ==  pred[0]   and   
-    #    src02 ==  pred[0]   and  
-    #    src03 ==  pred[0]   and  
-    #    src10 ==  pred[1]   and  
-    #    src11 ==  pred[1]   and  
-    #    src12 ==  pred[1]   and  
-    #    src13 ==  pred[1]   and  
-    #    src20 ==  pred[2]   and  
-    #    src21 ==  pred[2]   and 
-    #    src22 ==  pred[2]   and 
-    #    src23 ==  pred[2]   and 
-    #    src30 ==  pred[3]   and 
-    #    src31 ==  pred[3]   and 
-    #    src32 ==  pred[3]   and 
-    #    src33 ==  pred[3]   and ( (has_left and is_h) or (has_top and is_v) ) ): 
-    #    print("v H copy mode")
-    #    return 2 
+    global HV_copy_sbnum
 
+    if( src == pred and ( (has_left and is_h) or (has_top and is_v) ) ): 
+        print("v H copy mode")
+        HV_copy_sbnum +=1
+        return 6 #B_K0 + 2bit(indicate block mode) 
 
     #print("is_h,isv :"+str(is_h) + " " + str(is_v))
     #print(src00,src01,src02,src03)
     #print(src10,src11,src12,src13)
     #print(src20,src21,src22,src23)
     #print(src30,src31,src32,src33)
-    #global HV_copy_sbnum
 
 
 
@@ -337,10 +331,9 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
     #bits = 28 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
     #bits = 28 + 4*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
     if(zero_cnt0==4 and zero_cnt1==4 and zero_cnt2==4 and zero_cnt3==4 and zero_cnt4==4):
-        bits = 8+4
+        bits = 8+4 #B_K0 + min_val
         print("all pixel is the same in the 4x4 block")
-        print(src)
-        #print(pred)
+        
     else:
         #bits = 28 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
         #bits = 30 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
@@ -387,41 +380,35 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     #print("hen" + str(h_en))
     #print("ven" + str(v_en))
     DC = [0, 0, 0, 0]
-    left = [src[sb_idx-1][3],src[sb_idx-1][7],src[sb_idx-1][11],src[sb_idx-1][15]]
-
-    #print(src[sb_idx])
     has_left = h_en
-    h_bits = compress(left,src[sb_idx],1,0,0, has_left,0)
-    #h_bits = compress(left,[0]*16,1,0,0, has_left,0)
+    left=[0]*16
+    if(has_left):
+        left = src[sb_idx-1]
 
-    #if(v_en==1):
-        #top = [src[sb_idx-1][12],src[sb_idx-1][13],src[sb_idx-1][14],src[sb_idx-1][15]]
     has_top = v_en
-    top = [src[sb_idx-1][12],src[sb_idx-1][13],src[sb_idx-1][14],src[sb_idx-1][15]]
+    top = [0]*16
+    if(has_top):
+        top = src[sb_idx-w]
 
+    print("\n src \n")
+    print(src[sb_idx])
+    if(has_left): 
+        print("\n left \n")
+        print(left)
+    if(has_top):
+        print("\n top \n")
+        print(top)
+
+
+    h_bits = compress(left,src[sb_idx],1,0,0, has_left,0)
     v_bits = compress(top,src[sb_idx],0,1,0, 0,has_top)
-
-    #if(h_en==0 and v_en==0):
-        #DC = [128,128,128,128]
-
     dc_bits = compress(DC,src[sb_idx],0,0,1,0,0)
-    oth_bits = compress(DC, src[sb_idx], 0, 0, 0, 0, 0)
-
-
-    #if(h_en==0 and v_en==0):
-    #    min_bits = dc_bits
-    #elif(h_en==1 and v_en==0):
-    #    min_bits = h_bits
-    #elif(h_en==0 and v_en==1):
-    #    min_bits = v_bits
-    #else:
-    #min_bits = min(dc_bits,h_bits,v_bits,oth_bits)
+    #oth_bits = compress(DC, src[sb_idx], 0, 0, 0, 0, 0)
     min_bits = min(dc_bits,h_bits,v_bits)
     #min_bits = dc_bits
     #min_bits = min(dc_bits,h_bits,v_bits)
-    #min_bits = dc_bits
-    if((min_bits%8) !=0 ):
-        min_bits = (min_bits//8 + 1)*8
+    #if((min_bits%8) !=0 ):
+    #    min_bits = (min_bits//8 + 1)*8
 
     return min_bits 
 
@@ -441,16 +428,13 @@ for i in range(0,sby_num):
 print("Y total_bits" + (str)(total_bits) )
 #
 for i in range(0,sbuv_num):
-    total_bits += compress_sb4x4(Upixel,i,sbw,sbh,0)
+    total_bits += compress_sb4x4(Upixel,i,uv_sbw,uv_sbh,0)
 #
 print(total_bits)
 for i in range(0,sbuv_num):
-    total_bits += compress_sb4x4(Vpixel,i,sbw,sbh,0)
+    total_bits += compress_sb4x4(Vpixel,i,uv_sbw,uv_sbh,0)
 #
 print(total_bits)
 ratio = total_bits/(width*height*8*1.5)
 print("ratio:" + (str)(ratio))
-
-
-
-
+print("HV COPY sblock num : " + str(HV_copy_sbnum))
