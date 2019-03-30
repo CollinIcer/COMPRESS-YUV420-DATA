@@ -9,6 +9,7 @@ screenLevels = 255.0
 TR_COPY_MODE = 1 
 SB_COPY_MODE = 1  
 SUBBLOCK_MODE  = 1 #3 sub block
+UV_TOGATHER  = 1 
 #yuv_file = "test1280x720.yuv"
 yuv_file = "vid720.yuv"
 #yuv_file = "vid00_720.yuv"
@@ -40,6 +41,7 @@ sbuv_num = sby_num//4
 Ypixel=[ [0]*16 for row in range(0,sby_num )] 
 Upixel=[ [0]*16 for row in range(0,sbuv_num)] 
 Vpixel=[ [0]*16 for row in range(0,sbuv_num)] 
+UVpixel=[ [0]*16 for row in range(0,sbuv_num*2)] 
 
 sbh = (int)(height/4)
 sbw = (int)(width/4)
@@ -182,7 +184,7 @@ def zero_cnt(src):
 
 
 
-def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
+def compress(left, top, src,is_h,is_v,is_dc, has_left, has_top):
      # src[0]  src[1]  src[2]  src[3]
      # src[4]  src[5]  src[6]  src[7]
      # src[8]  src[9]  src[10] src[11]
@@ -276,7 +278,7 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
     global uncompress_sbnum
 
     
-    if( SB_COPY_MODE and src == pred and ( (has_left and is_h) or (has_top and is_v) ) ): 
+    if( SB_COPY_MODE and ((src == left and has_left) or (src==top and has_top) ) ): 
         #print("v H copy mode")
         HV_copy_sbnum +=1
         return 4 #B_K0  
@@ -286,8 +288,6 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
     #print(src10,src11,src12,src13)
     #print(src20,src21,src22,src23)
     #print(src30,src31,src32,src33)
-
-
 
     #if([src00,src01,src02,src03,src10,src11,src12,src13,src20,src21,src22,src23,src30,src31,src32,src33] == ([0]*16)):
     #   HV_copy_sbnum+=1
@@ -320,11 +320,6 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
     k3 = get_bits(src2_sub_max)
     k4 = get_bits(src3_sub_max)
 
-    #zero_cnt0 = (int)(min_src0==0) + (int)(min_src1==0) + (int)(min_src2==0) + (int)(min_src3==0)
-    #zero_cnt1 = (int)(src00==min0) + (int)(src01==min0) + (int)(src02==min0) + (int)(src03==min0)
-    #zero_cnt2 = (int)(src10==min1) + (int)(src11==min1) + (int)(src12==min1) + (int)(src13==min1)
-    #zero_cnt3 = (int)(src20==min2) + (int)(src21==min2) + (int)(src22==min2) + (int)(src23==min2)
-    #zero_cnt4 = (int)(src30==min3) + (int)(src31==min3) + (int)(src32==min3) + (int)(src33==min3)
 
     zero_cnt0 = zero_cnt([min_src0,min_src1,min_src2,min_src3])
     zero_cnt1 = zero_cnt([src00-min0,src01-min0,src02-min0,src03-min0])
@@ -345,12 +340,30 @@ def compress(pred,src,is_h,is_v,is_dc, has_left, has_top):
         #bits = 28 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
         #bits = 30 + (4-zero_cnt0)*k0 + (4-zero_cnt1)*k1 +  (4-zero_cnt2)*k2 + (4-zero_cnt3)*k3 + (4-zero_cnt4)*k4
         k0_bits = 0 if(zero_cnt0==4) else (3*k0 + 2)
-        k1_bits = 0 if(zero_cnt1==4) else (3*k1 + 2)
 
         if(TR_COPY_MODE):
-            k2_bits = 0 if((zero_cnt2==4) or ([src10,src11,src12,src13] == [src00,src01,src02,src03])) else (3*k2 + 2)
-            k3_bits = 0 if((zero_cnt3==4) or ([src20,src21,src22,src23] == [src00,src01,src02,src03] or [src20,src21,src22,src23] == [src10,src11,src12,src13] )) else (3*k3 + 2)
-            k4_bits = 0 if((zero_cnt4==4) or ([src30,src31,src32,src33] == [src00,src01,src02,src03] or [src30,src31,src32,src33] == [src10,src11,src12,src13]  or [src30,src31,src32,src33] == [src20,src21,src22,src23] )) else (3*k4 + 2)
+            k1_copy = 1 if( is_h and ((([src00,src01,src02,src03] == left[0:4]) and has_left) or (([src00,src01,src02,src03]==top[12:16]) and has_top)) or \
+                            (is_v and ((([src00,src01,src02,src03] == [left[3],left[7],left[11], left[15]]) and has_left) or (([src00,src01,src02,src03]==[top[0], top[4],top[8],top[12]]) and has_top))) ) else 0
+
+            k2_copy = 1 if( is_h and ((([src10,src11,src12,src13] == left[4:8]) and has_left) or ([src10,src11,src12,src13]== [src00,src01,src02,src03])) or \
+                            (is_v and (([src10,src11,src12,src13] == [src00,src01,src02,src03])  or ( ([src10,src11,src12,src13]==[top[1], top[5],top[9],top[13]]) and has_top))) ) else 0
+
+
+            k3_copy = 1 if( ( ([src20,src21,src22,src23]== [src10,src11,src12,src13]) or ([src20,src21,src22,src23]== [src00,src01,src02,src03])) or \
+                            (is_h and (([src20,src21,src22,src23] == left[8:12]) and has_left))    or \
+                            (is_v and (([src20,src21,src22,src23]==[top[2], top[6],top[10],top[14]]) and has_top))) else 0
+
+
+            k4_copy = 1 if( (([src30,src31,src32,src33]== [src10,src11,src12,src13]) or ([src30,src31,src32,src33]== [src00,src01,src02,src03]) or ([src30,src31,src32,src33]== [src20,src21,src22,src23])) or \
+                            (is_h and ([src30,src31,src32,src33] == left[12:16]) and has_left ) or \
+                            (is_v and ([src30,src31,src32,src33]==[top[3], top[7],top[11],top[15]]) and has_top)) else 0
+
+
+            k1_bits = 0 if((zero_cnt1==4) or k1_copy ) else (3*k1 + 2)
+            k2_bits = 0 if((zero_cnt2==4) or k2_copy ) else (3*k2 + 2)
+            k3_bits = 0 if((zero_cnt3==4) or k3_copy ) else (3*k3 + 2)
+            k4_bits = 0 if((zero_cnt4==4) or k4_copy ) else (3*k4 + 2)
+
         else:
             k2_bits = 0 if (zero_cnt2 == 4) else (3 * k2 + 2)
             k3_bits = 0 if (zero_cnt3 == 4) else (3 * k3 + 2)
@@ -380,7 +393,7 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
 
     if(is_y==0):
         v_en = 0
-        if((sb_idx%w)==0 or (sb_idx%2)==0) :
+        if((sb_idx%w)==0 or ( UV_TOGATHER==1 and (sb_idx%4)==0 or (UV_TOGATHER==0 and (sb_idx%2)==0))) :
             h_en = 0
         else:
             h_en = 1 
@@ -408,15 +421,15 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     #    print(top)
 
 
-    h_bits = compress(left,src[sb_idx],1,0,0, has_left,0)
-    v_bits = compress(top,src[sb_idx],0,1,0, 0,has_top)
-    dc_bits = compress(DC,src[sb_idx],0,0,1,0,0)
+    h_bits = compress(left,top,src[sb_idx],1,0,0, has_left,has_top)
+    v_bits = compress(left,top,src[sb_idx],0,1,0, has_left,has_top)
+    dc_bits = compress(left,top,src[sb_idx],0,0,1,has_left,has_top)
     #oth_bits = compress(DC, src[sb_idx], 0, 0, 0, 0, 0)
 
     if(SUBBLOCK_MODE):
         min_bits = min(dc_bits,h_bits,v_bits)
     else:
-        min_bits = dc_bits-2
+        min_bits = h_bits-2
     #min_bits = dc_bits
     #min_bits = min(dc_bits,h_bits,v_bits)
     #if((min_bits%8) !=0 ):
@@ -442,13 +455,21 @@ for frame in range(0,10): #10 frame num
     #
     print("Y total_bits" + (str)(total_bits) )
     #
-    for i in range(0,sbuv_num):
-        total_bits += compress_sb4x4(Upixel,i,uv_sbw,uv_sbh,0)
-    #
-    #print(total_bits)
-    for i in range(0,sbuv_num):
-        total_bits += compress_sb4x4(Vpixel,i,uv_sbw,uv_sbh,0)
-    #
+    if(UV_TOGATHER==0):
+        for i in range(0,sbuv_num):
+            total_bits += compress_sb4x4(Upixel,i,uv_sbw,uv_sbh,0)
+        for i in range(0,sbuv_num):
+            total_bits += compress_sb4x4(Vpixel,i,uv_sbw,uv_sbh,0)
+    else:
+        for i in range(0,sbuv_num//2):
+            UVpixel[i]   = Upixel[i] 
+            UVpixel[i+1] = Upixel[i+1] 
+            UVpixel[i+2] = Upixel[i] 
+            UVpixel[i+3] = Upixel[i+1] 
+        for i in range(0,sbuv_num*2):
+            total_bits += compress_sb4x4(UVpixel,i,sbw,sbh,0)
+
+
     #print(total_bits)
     ratio = total_bits/(width*height*8*1.5)
     print("frame: " + str(frame))
