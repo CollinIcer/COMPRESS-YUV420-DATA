@@ -184,7 +184,7 @@ def zero_cnt(src):
 
 
 
-def compress(left, top, src,is_h,is_v,is_dc, has_left, has_top):
+def compress(left, top, topleft, topright, src,is_h,is_v,is_dc, has_left, has_top, has_topleft, has_topright ):
      # src[0]  src[1]  src[2]  src[3]
      # src[4]  src[5]  src[6]  src[7]
      # src[8]  src[9]  src[10] src[11]
@@ -278,7 +278,7 @@ def compress(left, top, src,is_h,is_v,is_dc, has_left, has_top):
     global uncompress_sbnum
 
     
-    if( SB_COPY_MODE and ((src == left and has_left) or (src==top and has_top) ) ): 
+    if( SB_COPY_MODE and ((src == left and has_left) or (src==top and has_top)  or (src==topleft and has_left) or (src==topright and has_topright) )): 
         #print("v H copy mode")
         HV_copy_sbnum +=1
         return 4 #B_K0  
@@ -342,21 +342,52 @@ def compress(left, top, src,is_h,is_v,is_dc, has_left, has_top):
         k0_bits = 0 if(zero_cnt0==4) else (3*k0 + 2)
 
         if(TR_COPY_MODE):
-            k1_copy = 1 if( is_h and ((([src00,src01,src02,src03] == left[0:4]) and has_left) or (([src00,src01,src02,src03]==top[12:16]) and has_top)) or \
-                            (is_v and ((([src00,src01,src02,src03] == [left[3],left[7],left[11], left[15]]) and has_left) or (([src00,src01,src02,src03]==[top[0], top[4],top[8],top[12]]) and has_top))) ) else 0
+            k1_copy = 1 if( is_h and (([src00,src01,src02,src03] == left[0:4]) and has_left) or \
+                            is_h and (([src00,src01,src02,src03]==top[12:16]) and has_top) or \
+                            is_h and (([src00,src01,src02,src03]==topleft[12:16]) and has_topleft) or \
+                            is_h and (([src00,src01,src02,src03]==topright[12:16]) and has_topright) or \
+                            is_v and (([src00,src01,src02,src03]==[left[3],left[7],left[11], left[15]]) and has_left) or \
+                            is_v and (([src00,src01,src02,src03]==[top[0], top[4],top[8],top[12]]) and has_top) or \
+                            is_v and (([src00,src01,src02,src03]==[topleft[3],topleft[7],topleft[11],topleft[15]]) and has_topleft) or \
+                            is_v and (([src00,src01,src02,src03]==[topright[0],topright[4],topright[8],topright[12]]) and has_topright) or \
+                            is_dc and (([src00,src01,src02,src03]==[left[2], left[3],left[6],left[7]]) and has_left) or\
+                            is_dc and (([src00,src01,src02,src03]==[top[8], top[9],top[12],top[13]]) and has_top) or\
+                            is_dc and (([src00,src01,src02,src03]==[topleft[10], topleft[11],topleft[14],topleft[15]]) and has_topleft) or\
+                            is_dc and (([src00,src01,src02,src03]==[top[10], top[11],top[14],top[15]]) and has_top) ) \
+                            else 0
 
-            k2_copy = 1 if( is_h and ((([src10,src11,src12,src13] == left[4:8]) and has_left) or ([src10,src11,src12,src13]== [src00,src01,src02,src03])) or \
-                            (is_v and (([src10,src11,src12,src13] == [src00,src01,src02,src03])  or ( ([src10,src11,src12,src13]==[top[1], top[5],top[9],top[13]]) and has_top))) ) else 0
+
+            k2_copy = 1 if( ([src10,src11,src12,src13]== [src00,src01,src02,src03]) or \
+                            is_h and (([src10,src11,src12,src13] == left[4:8]) and has_left) or\
+                            is_h and (([src10,src11,src12,src13] == left[0:4]) and has_left)  or \
+                            is_v and ( ([src10,src11,src12,src13]==[top[1], top[5],top[9],top[13]]) and has_top) or \
+                            is_v and ( ([src10,src11,src12,src13]==[top[0], top[4],top[8],top[12]]) and has_top) or \
+                            is_v and ( ([src10,src11,src12,src13]==[top[2], top[6],top[10],top[14]]) and has_top) or \
+                            is_dc and ( ([src10,src11,src12,src13]==[top[8], top[9],top[12],top[13]]) and has_top) or \
+                            is_dc and ( ([src10,src11,src12,src13]==[top[10], top[11],top[14],top[15]]) and has_top) or \
+                            is_dc and ( ([src10,src11,src12,src13]==[topright[8], topright[9],topright[12],topright[13]]) and has_topright) )  \
+                            else 0
 
 
-            k3_copy = 1 if( ( ([src20,src21,src22,src23]== [src10,src11,src12,src13]) or ([src20,src21,src22,src23]== [src00,src01,src02,src03])) or \
-                            (is_h and (([src20,src21,src22,src23] == left[8:12]) and has_left))    or \
-                            (is_v and (([src20,src21,src22,src23]==[top[2], top[6],top[10],top[14]]) and has_top))) else 0
+            k3_copy = 1 if( (([src20,src21,src22,src23]== [src10,src11,src12,src13]) or ([src20,src21,src22,src23]== [src00,src01,src02,src03])) or \
+                            is_h and (([src20,src21,src22,src23] == left[8:12]) and has_left) or \
+                            is_h and (([src20,src21,src22,src23] == left[4:8]) and has_left)    or \
+                            is_v and (([src20,src21,src22,src23]==[top[2], top[6],top[10],top[14]]) and has_top) or \
+                            is_v and (([src20,src21,src22,src23]==[top[1], top[5],top[9],top[13]]) and has_top) or \
+                            is_v and (([src20,src21,src22,src23]==[top[3], top[7],top[11],top[15]]) and has_top) or \
+                            is_dc and (([src20,src21,src22,src23]==[left[10], left[11],left[14],left[15]]) and has_left) or \
+                            is_dc and (([src20,src21,src22,src23]==[left[2], left[3],left[6],left[7]]) and has_left) ) \
+                            else 0
 
 
             k4_copy = 1 if( (([src30,src31,src32,src33]== [src10,src11,src12,src13]) or ([src30,src31,src32,src33]== [src00,src01,src02,src03]) or ([src30,src31,src32,src33]== [src20,src21,src22,src23])) or \
                             (is_h and ([src30,src31,src32,src33] == left[12:16]) and has_left ) or \
-                            (is_v and ([src30,src31,src32,src33]==[top[3], top[7],top[11],top[15]]) and has_top)) else 0
+                            (is_h and ([src30,src31,src32,src33] == left[8:12]) and has_left ) or \
+                            (is_v and ([src30,src31,src32,src33]==[top[3], top[7],top[11],top[15]]) and has_top) or \
+                            (is_v and ([src30,src31,src32,src33]==[top[2], top[6],top[10],top[14]]) and has_top) or\
+                            (is_v and ([src30,src31,src32,src33]==[topright[0], topright[4],topright[8],topright[12]]) and has_topright) or\
+                            (is_dc and ([src30,src31,src32,src33]==[topright[0], topright[1],topright[4],topright[5]]) and has_topright) )\
+                            else 0
 
 
             k1_bits = 0 if((zero_cnt1==4) or k1_copy ) else (3*k1 + 2)
@@ -365,6 +396,7 @@ def compress(left, top, src,is_h,is_v,is_dc, has_left, has_top):
             k4_bits = 0 if((zero_cnt4==4) or k4_copy ) else (3*k4 + 2)
 
         else:
+            k1_bits = 0 if (zero_cnt1 == 4) else (3 * k1 + 2)
             k2_bits = 0 if (zero_cnt2 == 4) else (3 * k2 + 2)
             k3_bits = 0 if (zero_cnt3 == 4) else (3 * k3 + 2)
             k4_bits = 0 if (zero_cnt4 == 4) else (3 * k4 + 2)
@@ -382,17 +414,31 @@ def compress(left, top, src,is_h,is_v,is_dc, has_left, has_top):
 def compress_sb4x4(src, sb_idx, w, h, is_y):
     # hen ven gen
     if(is_y):
-        if(sb_idx < w or ((sb_idx//w)%4) == 3):
+        if( ((sb_idx//w)%4) == 0 or ((sb_idx//w)%4) == 3):
             v_en = 0
         else:
             v_en = 1 
+
         if((sb_idx%w)==0 or (sb_idx%4)==0 ):
             h_en = 0
         else:
             h_en = 1 
 
+        if( (((sb_idx//w)%4) == 1 or ((sb_idx//w)%4) == 2) and ((sb_idx%4)!=0) ):
+            tl_en = 1
+        else:
+            tl_en = 0 
+
+        if( (((sb_idx//w)%4) == 1 or ((sb_idx//w)%4) == 2) and ((sb_idx%4)!=3) ):
+            tr_en = 1
+        else:
+            tr_en = 0 
+         
+
     if(is_y==0):
         v_en = 0
+        tl_en = 0
+        tr_en = 0
         if((sb_idx%w)==0 or ( UV_TOGATHER==1 and (sb_idx%4)==0 or (UV_TOGATHER==0 and (sb_idx%2)==0))) :
             h_en = 0
         else:
@@ -411,6 +457,17 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     if(has_top):
         top = src[sb_idx-w]
 
+    has_topleft = tl_en
+    topleft = [0]*16 
+    if(has_topleft):
+        topleft = src[sb_idx-w-1]
+
+    has_topright = tr_en
+    topright = [0]*16 
+    if(has_topright):
+        topright = src[sb_idx-w+1]
+
+
     #print("\n src \n")
     #print(src[sb_idx])
     #if(has_left): 
@@ -421,9 +478,9 @@ def compress_sb4x4(src, sb_idx, w, h, is_y):
     #    print(top)
 
 
-    h_bits = compress(left,top,src[sb_idx],1,0,0, has_left,has_top)
-    v_bits = compress(left,top,src[sb_idx],0,1,0, has_left,has_top)
-    dc_bits = compress(left,top,src[sb_idx],0,0,1,has_left,has_top)
+    h_bits = compress(left,top,topleft, topright,src[sb_idx],1,0,0, has_left,has_top,has_topleft, has_topright)
+    v_bits = compress(left,top,topleft, topright,src[sb_idx],0,1,0, has_left,has_top,has_topleft, has_topright)
+    dc_bits = compress(left,top,topleft,topright,src[sb_idx],0,0,1,has_left,has_top,has_topleft, has_topright)
     #oth_bits = compress(DC, src[sb_idx], 0, 0, 0, 0, 0)
 
     if(SUBBLOCK_MODE):
